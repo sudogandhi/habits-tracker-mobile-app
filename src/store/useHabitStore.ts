@@ -34,9 +34,31 @@ const defaultSettings: Settings = {
 const defaultProfile: UserProfile = {
   name: '',
   hasCompletedOnboarding: false,
+  onboardedAt: null,
 };
 
 const defaultHabits: Habit[] = [];
+
+const todayDateKey = () => {
+  const today = new Date();
+  return dateKey(today.getFullYear(), today.getMonth() + 1, today.getDate());
+};
+
+const deriveOnboardedAt = (profile: Partial<UserProfile> | undefined, entries: HabitEntry[] | undefined) => {
+  if (profile?.onboardedAt) {
+    return profile.onboardedAt;
+  }
+
+  if (!profile?.hasCompletedOnboarding) {
+    return null;
+  }
+
+  if (entries && entries.length > 0) {
+    return [...entries].sort((a, b) => a.dateKey.localeCompare(b.dateKey))[0]?.dateKey ?? todayDateKey();
+  }
+
+  return todayDateKey();
+};
 
 export const useHabitStore = create<HabitState>()(
   persist(
@@ -82,6 +104,7 @@ export const useHabitStore = create<HabitState>()(
           profile: {
             ...state.profile,
             hasCompletedOnboarding: true,
+            onboardedAt: state.profile.onboardedAt ?? todayDateKey(),
           },
         })),
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
@@ -102,6 +125,7 @@ export const useHabitStore = create<HabitState>()(
           profile: {
             ...defaultProfile,
             ...(typedPersistedState?.profile ?? {}),
+            onboardedAt: deriveOnboardedAt(typedPersistedState?.profile, typedPersistedState?.entries),
           },
           habits: typedPersistedState?.habits ?? currentState.habits,
           entries: typedPersistedState?.entries ?? currentState.entries,

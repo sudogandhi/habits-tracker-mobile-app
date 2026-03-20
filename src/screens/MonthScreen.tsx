@@ -9,8 +9,10 @@ import { monthLabel } from '@/utils/date';
 
 export const MonthScreen = () => {
   const theme = useAppTheme();
-  const { settings, habits, entries, selectedMonth, setSelectedMonth } = useHabitStore();
-  const summary = monthSummary(settings, habits, entries, selectedMonth);
+  const { settings, profile, habits, entries, selectedMonth, setSelectedMonth } = useHabitStore();
+  const today = new Date();
+  const todayDateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const summary = monthSummary(settings, habits, entries, selectedMonth, profile.onboardedAt, todayDateKey);
   const winningDays = summary.daily.filter((day) => day.net > 0).length;
   const perfectDays = summary.daily.filter((day) => day.badHappened === 0 && day.goodCompletion === 1).length;
   const maxAbsNet = Math.max(1, ...summary.daily.map((day) => Math.abs(day.net)));

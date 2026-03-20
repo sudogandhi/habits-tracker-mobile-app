@@ -25,6 +25,8 @@ export const monthSummary = (
   habits: Habit[],
   entries: HabitEntry[],
   month: number,
+  startDateKey?: string | null,
+  endDateKey?: string | null,
 ): MonthSummary => {
   const activeHabits = habits.filter((h) => h.active);
   const days = getDaysInMonth(settings.year, month);
@@ -35,10 +37,15 @@ export const monthSummary = (
   let badTotal = 0;
   let netTotal = 0;
   let completionAccumulator = 0;
+  let completionDaysCount = 0;
 
   const daily = Array.from({ length: days }, (_, i) => {
     const day = i + 1;
     const dk = dateKey(settings.year, month, day);
+
+    if ((startDateKey && dk < startDateKey) || (endDateKey && dk > endDateKey)) {
+      return { day, goodDone: 0, badHappened: 0, net: 0, goodCompletion: null };
+    }
 
     let goodDone = 0;
     let badHappened = 0;
@@ -56,7 +63,10 @@ export const monthSummary = (
     netTotal += net;
 
     const completion = activeGoodCount === 0 ? null : goodDone / activeGoodCount;
-    if (completion !== null) completionAccumulator += completion;
+    if (completion !== null) {
+      completionAccumulator += completion;
+      completionDaysCount += 1;
+    }
 
     return { day, goodDone, badHappened, net, goodCompletion: completion };
   });
@@ -66,18 +76,24 @@ export const monthSummary = (
     goodDone: goodDoneTotal,
     badHappened: badTotal,
     netScore: netTotal,
-    avgCompletionGood: activeGoodCount === 0 ? 0 : completionAccumulator / days,
+    avgCompletionGood: activeGoodCount === 0 || completionDaysCount === 0 ? 0 : completionAccumulator / completionDaysCount,
     daily,
   };
 };
 
-export const yearlySummaries = (settings: Settings, habits: Habit[], entries: HabitEntry[]) =>
-  Array.from({ length: 12 }, (_, i) => monthSummary(settings, habits, entries, i + 1));
+export const yearlySummaries = (
+  settings: Settings,
+  habits: Habit[],
+  entries: HabitEntry[],
+  startDateKey?: string | null,
+  endDateKey?: string | null,
+) => Array.from({ length: 12 }, (_, i) => monthSummary(settings, habits, entries, i + 1, startDateKey, endDateKey));
 
 export const badHabitAvoidanceStreaks = (
   settings: Settings,
   habits: Habit[],
   entries: HabitEntry[],
+  startDateKey?: string | null,
   referenceDate = new Date(),
 ) => {
   const map = entryMap(entries);
@@ -94,7 +110,12 @@ export const badHabitAvoidanceStreaks = (
     const cursor = new Date(endDate);
 
     while (cursor.getFullYear() === settings.year) {
-      const value = map.get(`${habit.id}|${dateKey(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate())}`) ?? 0;
+      const cursorDateKey = dateKey(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate());
+      if (startDateKey && cursorDateKey < startDateKey) {
+        break;
+      }
+
+      const value = map.get(`${habit.id}|${cursorDateKey}`) ?? 0;
       if (value === 1) {
         break;
       }

@@ -28,6 +28,7 @@ export type Settings = {
 export type UserProfile = {
   name: string;
   hasCompletedOnboarding: boolean;
+  onboardedAt: string | null;
 };
 
 export type DaySummary = {

@@ -12,7 +12,9 @@ import { monthLabel } from '@/utils/date';
 export const DashboardScreen = () => {
   const theme = useAppTheme();
   const { settings, profile, habits, entries, selectedMonth, setSelectedMonth } = useHabitStore();
-  const months = yearlySummaries(settings, habits, entries);
+  const today = new Date();
+  const todayDateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const months = yearlySummaries(settings, habits, entries, profile.onboardedAt, todayDateKey);
 
   const ytd = months.reduce(
     (acc, m) => ({
@@ -28,7 +30,7 @@ export const DashboardScreen = () => {
   const level = Math.max(1, Math.floor(Math.max(0, ytd.net) / 12) + 1);
   const xpIntoLevel = Math.max(0, ytd.net) % 12;
   const activeHabits = habits.filter((habit) => habit.active);
-  const badHabitStreaks = badHabitAvoidanceStreaks(settings, habits, entries);
+  const badHabitStreaks = badHabitAvoidanceStreaks(settings, habits, entries, profile.onboardedAt, today);
   const questCompletion = activeHabits.length === 0 ? 0 : Math.round(((currentMonth?.avgCompletionGood ?? 0) * 100));
   const monthlyWins = months.filter((month) => month.netScore > 0).length;
   const badges = [
@@ -98,10 +100,38 @@ export const DashboardScreen = () => {
       </LinearGradient>
 
       <View style={styles.metricsGrid}>
-        <MetricCard label="Power Score" value={`${ytd.net}`} hint="Every good move earns points. Every slip costs XP." icon="flash" tone="warning" />
-        <MetricCard label="Quest Clears" value={`${ytd.good}`} hint="Total positive check-ins this year." icon="checkmark-done-circle" tone="success" />
-        <MetricCard label="Trap Hits" value={`${ytd.bad}`} hint="Penalty-triggering moments to watch and reduce." icon="alert-circle" tone="danger" />
+        <View style={styles.metricItem}>
+          <MetricCard label="Power Score" value={`${ytd.net}`} icon="flash" tone="warning" />
+        </View>
+        <View style={styles.metricItem}>
+          <MetricCard label="Quest Clears" value={`${ytd.good}`} icon="checkmark-done-circle" tone="success" />
+        </View>
+        <View style={styles.metricItem}>
+          <MetricCard label="Trap Hits" value={`${ytd.bad}`} icon="alert-circle" tone="danger" />
+        </View>
       </View>
+
+      <SurfaceCard>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>Bad Habit Streaks</Text>
+        {badHabitStreaks.length === 0 ? (
+          <Text style={[styles.emptyCopy, { color: theme.colors.textSecondary }]}>
+            Add a bad habit to start tracking your avoidance streak.
+          </Text>
+        ) : (
+          <View style={styles.streaksGrid}>
+            {badHabitStreaks.map((streak) => (
+              <View key={streak.habitId} style={[styles.streakCard, { backgroundColor: theme.colors.cardSecondary }]}>
+                <Ionicons name="shield-checkmark" size={18} color={theme.colors.warning} />
+                <Text style={[styles.streakValue, { color: theme.colors.textPrimary }]}>{streak.streak}</Text>
+                <Text style={[styles.streakLabel, { color: theme.colors.textSecondary }]} numberOfLines={2}>
+                  {streak.habitName}
+                </Text>
+                <Text style={[styles.streakMeta, { color: theme.colors.success }]}>days avoided</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </SurfaceCard>
 
       <SurfaceCard>
         <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>Current Mission</Text>
@@ -124,28 +154,6 @@ export const DashboardScreen = () => {
             </View>
           </View>
         </View>
-      </SurfaceCard>
-
-      <SurfaceCard>
-        <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>Bad Habit Streaks</Text>
-        {badHabitStreaks.length === 0 ? (
-          <Text style={[styles.emptyCopy, { color: theme.colors.textSecondary }]}>
-            Add a bad habit to start tracking your avoidance streak.
-          </Text>
-        ) : (
-          <View style={styles.streaksGrid}>
-            {badHabitStreaks.map((streak) => (
-              <View key={streak.habitId} style={[styles.streakCard, { backgroundColor: theme.colors.cardSecondary }]}>
-                <Ionicons name="shield-checkmark" size={18} color={theme.colors.warning} />
-                <Text style={[styles.streakValue, { color: theme.colors.textPrimary }]}>{streak.streak}</Text>
-                <Text style={[styles.streakLabel, { color: theme.colors.textSecondary }]} numberOfLines={2}>
-                  {streak.habitName}
-                </Text>
-                <Text style={[styles.streakMeta, { color: theme.colors.success }]}>days avoided</Text>
-              </View>
-            ))}
-          </View>
-        )}
       </SurfaceCard>
 
       <MonthChips selectedMonth={selectedMonth} onSelect={setSelectedMonth} />
@@ -260,7 +268,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   metricsGrid: {
-    gap: 10,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'stretch',
+  },
+  metricItem: {
+    flex: 1,
+    minWidth: 0,
   },
   sectionTitle: {
     fontSize: 17,
