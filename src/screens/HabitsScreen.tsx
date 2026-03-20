@@ -147,7 +147,7 @@ export const HabitsScreen = () => {
           <Text style={[styles.helperText, { color: theme.colors.textSecondary }]}>
             {habitType === 'Good'
               ? `Good habits add +${settings.goodPoints} to your score.`
-              : `Bad habits add ${settings.badPenalty} to your score.`}
+              : `Bad habits add +${settings.badAvoidReward} when avoided and ${settings.badPenalty} when they happen.`}
           </Text>
 
           <View style={styles.actionRow}>
@@ -191,7 +191,7 @@ export const HabitsScreen = () => {
         ) : null}
 
         {habits.map((habit) => {
-          const score = habit.type === 'Good' ? `+${settings.goodPoints}` : `${settings.badPenalty}`;
+          const score = habit.type === 'Good' ? `+${settings.goodPoints}` : `+${settings.badAvoidReward} / ${settings.badPenalty}`;
           const accentColor = habit.type === 'Good' ? theme.colors.success : theme.colors.danger;
 
           return (

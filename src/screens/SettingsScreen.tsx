@@ -45,6 +45,7 @@ export const SettingsScreen = () => {
         <Text style={[styles.item, { color: theme.colors.textSecondary }]}>Year: {settings.year}</Text>
         <Text style={[styles.item, { color: theme.colors.textSecondary }]}>Good habit points: {settings.goodPoints}</Text>
         <Text style={[styles.item, { color: theme.colors.textSecondary }]}>Bad habit penalty: {settings.badPenalty}</Text>
+        <Text style={[styles.item, { color: theme.colors.textSecondary }]}>Bad habit avoid reward: +{settings.badAvoidReward}</Text>
       </SurfaceCard>
     </ScrollView>
   );

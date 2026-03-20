@@ -21,6 +21,7 @@ export type Settings = {
   year: number;
   goodPoints: number;
   badPenalty: number;
+  badAvoidReward: number;
   themeMode: ThemeMode;
 };
 

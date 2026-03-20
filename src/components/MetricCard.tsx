@@ -43,9 +43,9 @@ export const MetricCard = ({ label, value, hint, icon = 'sparkles', tone = 'acce
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 22,
-    padding: 16,
-    minHeight: 132,
+    borderRadius: 18,
+    padding: 12,
+    minHeight: 104,
     justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
@@ -61,23 +61,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   iconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.4,
+    letterSpacing: 0.2,
   },
   value: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '900',
   },
   hint: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 16,
   },
 });

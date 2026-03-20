@@ -6,7 +6,7 @@ import { MonthChips } from '@/components/MonthChips';
 import { SurfaceCard } from '@/components/SurfaceCard';
 import { useHabitStore } from '@/store/useHabitStore';
 import { useAppTheme } from '@/theme/useAppTheme';
-import { yearlySummaries } from '@/utils/calculations';
+import { badHabitAvoidanceStreaks, yearlySummaries } from '@/utils/calculations';
 import { monthLabel } from '@/utils/date';
 
 export const DashboardScreen = () => {
@@ -28,6 +28,7 @@ export const DashboardScreen = () => {
   const level = Math.max(1, Math.floor(Math.max(0, ytd.net) / 12) + 1);
   const xpIntoLevel = Math.max(0, ytd.net) % 12;
   const activeHabits = habits.filter((habit) => habit.active);
+  const badHabitStreaks = badHabitAvoidanceStreaks(settings, habits, entries);
   const questCompletion = activeHabits.length === 0 ? 0 : Math.round(((currentMonth?.avgCompletionGood ?? 0) * 100));
   const monthlyWins = months.filter((month) => month.netScore > 0).length;
   const badges = [
@@ -125,6 +126,28 @@ export const DashboardScreen = () => {
         </View>
       </SurfaceCard>
 
+      <SurfaceCard>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>Bad Habit Streaks</Text>
+        {badHabitStreaks.length === 0 ? (
+          <Text style={[styles.emptyCopy, { color: theme.colors.textSecondary }]}>
+            Add a bad habit to start tracking your avoidance streak.
+          </Text>
+        ) : (
+          <View style={styles.streaksGrid}>
+            {badHabitStreaks.map((streak) => (
+              <View key={streak.habitId} style={[styles.streakCard, { backgroundColor: theme.colors.cardSecondary }]}>
+                <Ionicons name="shield-checkmark" size={18} color={theme.colors.warning} />
+                <Text style={[styles.streakValue, { color: theme.colors.textPrimary }]}>{streak.streak}</Text>
+                <Text style={[styles.streakLabel, { color: theme.colors.textSecondary }]} numberOfLines={2}>
+                  {streak.habitName}
+                </Text>
+                <Text style={[styles.streakMeta, { color: theme.colors.success }]}>days avoided</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </SurfaceCard>
+
       <MonthChips selectedMonth={selectedMonth} onSelect={setSelectedMonth} />
 
       <SurfaceCard>
@@ -150,18 +173,6 @@ export const DashboardScreen = () => {
         </View>
       </SurfaceCard>
 
-      <SurfaceCard>
-        <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>Monthly League Table</Text>
-        {months.map((m) => (
-          <View key={m.month} style={[styles.row, { borderBottomColor: theme.colors.border }]}>
-            <Text style={[styles.cellMonth, { color: theme.colors.textPrimary }]}>{monthLabel(m.month)}</Text>
-            <Text style={[styles.cell, { color: theme.colors.textSecondary }]}>+ {m.goodDone}</Text>
-            <Text style={[styles.cell, { color: theme.colors.textSecondary }]}>- {m.badHappened}</Text>
-            <Text style={[styles.cell, { color: m.netScore >= 0 ? theme.colors.success : theme.colors.danger }]}>{m.netScore}</Text>
-            <Text style={[styles.cell, { color: theme.colors.textSecondary }]}>{Math.round(m.avgCompletionGood * 100)}%</Text>
-          </View>
-        ))}
-      </SurfaceCard>
     </ScrollView>
   );
 };
@@ -295,6 +306,35 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  streaksGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  streakCard: {
+    width: '48%',
+    borderRadius: 18,
+    padding: 14,
+    gap: 6,
+  },
+  streakValue: {
+    fontSize: 26,
+    fontWeight: '900',
+  },
+  streakLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  streakMeta: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  emptyCopy: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+  },
   chartRow: {
     flexDirection: 'row',
     gap: 8,
@@ -307,20 +347,6 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     fontSize: 10,
-    fontWeight: '600',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-  },
-  cellMonth: {
-    width: 44,
-    fontWeight: '700',
-  },
-  cell: {
-    width: 62,
     fontWeight: '600',
   },
 });

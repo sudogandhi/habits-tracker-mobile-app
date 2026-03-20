@@ -39,7 +39,15 @@ export const TrackScreen = () => {
     return entries.find((entry) => entry.habitId === habit.id && entry.dateKey === todayDateKey)?.value === 1;
   }).length;
 
-  const todayScore = goodTrackedToday * settings.goodPoints + badTrackedToday * settings.badPenalty;
+  const badAvoidedToday = activeHabits.filter((habit) => {
+    if (habit.type !== 'Bad') return false;
+    return (entries.find((entry) => entry.habitId === habit.id && entry.dateKey === todayDateKey)?.value ?? 0) === 0;
+  }).length;
+
+  const todayScore =
+    goodTrackedToday * settings.goodPoints +
+    badTrackedToday * settings.badPenalty +
+    badAvoidedToday * settings.badAvoidReward;
 
   const pulseValue = (value: Animated.Value) => {
     Animated.sequence([
@@ -192,9 +200,15 @@ export const TrackScreen = () => {
                 >
                   <Pressable
                   onPress={() => {
-                    const pointValue = habit.type === 'Good' ? settings.goodPoints : settings.badPenalty;
                     const nextValue = value === 1 ? 0 : 1;
-                    const scoreDelta = nextValue === 1 ? pointValue : -pointValue;
+                    const scoreDelta =
+                      habit.type === 'Good'
+                        ? nextValue === 1
+                          ? settings.goodPoints
+                          : -settings.goodPoints
+                        : nextValue === 1
+                          ? settings.badPenalty - settings.badAvoidReward
+                          : settings.badAvoidReward - settings.badPenalty;
                     runScoreFlight(habit.id, habit.type, scoreDelta);
                     toggleEntry(habit.id, todayMonth, todayDay);
                   }}

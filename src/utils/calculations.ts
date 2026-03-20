@@ -12,6 +12,14 @@ const pointsForHabit = (habit: Habit, settings: Settings): number => {
   return habit.type === 'Good' ? settings.goodPoints : settings.badPenalty;
 };
 
+const dailyContribution = (habit: Habit, value: 0 | 1, settings: Settings): number => {
+  if (habit.type === 'Good') {
+    return value * pointsForHabit(habit, settings);
+  }
+
+  return value === 1 ? pointsForHabit(habit, settings) : settings.badAvoidReward;
+};
+
 export const monthSummary = (
   settings: Settings,
   habits: Habit[],
@@ -40,7 +48,7 @@ export const monthSummary = (
       const val = map.get(`${habit.id}|${dk}`) ?? 0;
       if (habit.type === 'Good') goodDone += val;
       if (habit.type === 'Bad') badHappened += val;
-      net += val * pointsForHabit(habit, settings);
+      net += dailyContribution(habit, val, settings);
     }
 
     goodDoneTotal += goodDone;
@@ -65,3 +73,40 @@ export const monthSummary = (
 
 export const yearlySummaries = (settings: Settings, habits: Habit[], entries: HabitEntry[]) =>
   Array.from({ length: 12 }, (_, i) => monthSummary(settings, habits, entries, i + 1));
+
+export const badHabitAvoidanceStreaks = (
+  settings: Settings,
+  habits: Habit[],
+  entries: HabitEntry[],
+  referenceDate = new Date(),
+) => {
+  const map = entryMap(entries);
+  const badHabits = habits.filter((habit) => habit.active && habit.type === 'Bad');
+  const endDate =
+    referenceDate.getFullYear() === settings.year
+      ? referenceDate
+      : referenceDate.getFullYear() > settings.year
+        ? new Date(settings.year, 11, 31)
+        : new Date(settings.year, 0, 1);
+
+  return badHabits.map((habit) => {
+    let streak = 0;
+    const cursor = new Date(endDate);
+
+    while (cursor.getFullYear() === settings.year) {
+      const value = map.get(`${habit.id}|${dateKey(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate())}`) ?? 0;
+      if (value === 1) {
+        break;
+      }
+
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    return {
+      habitId: habit.id,
+      habitName: habit.name,
+      streak,
+    };
+  });
+};

@@ -27,6 +27,7 @@ const defaultSettings: Settings = {
   year,
   goodPoints: 1,
   badPenalty: -4,
+  badAvoidReward: 2,
   themeMode: 'dark',
 };
 
@@ -88,6 +89,25 @@ export const useHabitStore = create<HabitState>()(
     {
       name: 'habit-tracker-store',
       storage: createJSONStorage(() => AsyncStorage),
+      merge: (persistedState, currentState) => {
+        const typedPersistedState = persistedState as Partial<HabitState> | undefined;
+
+        return {
+          ...currentState,
+          ...typedPersistedState,
+          settings: {
+            ...defaultSettings,
+            ...(typedPersistedState?.settings ?? {}),
+          },
+          profile: {
+            ...defaultProfile,
+            ...(typedPersistedState?.profile ?? {}),
+          },
+          habits: typedPersistedState?.habits ?? currentState.habits,
+          entries: typedPersistedState?.entries ?? currentState.entries,
+          selectedMonth: typedPersistedState?.selectedMonth ?? currentState.selectedMonth,
+        };
+      },
       partialize: (state) => ({
         settings: state.settings,
         profile: state.profile,
