@@ -1,4 +1,5 @@
 ﻿import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { monthLabel } from '@/utils/date';
 
@@ -23,10 +24,12 @@ export const MonthChips = ({ selectedMonth, onSelect }: Props) => {
               {
                 backgroundColor: active ? theme.colors.accent : theme.colors.surface,
                 borderColor: theme.colors.border,
+                shadowOpacity: active ? 0.18 : 0,
               },
             ]}
           >
-            <Text style={{ color: active ? '#FFFFFF' : theme.colors.textPrimary, fontWeight: '700' }}>{monthLabel(month)}</Text>
+            <Ionicons name={active ? 'flash' : 'ellipse-outline'} size={14} color={active ? '#FFFFFF' : theme.colors.textSecondary} />
+            <Text style={{ color: active ? '#FFFFFF' : theme.colors.textPrimary, fontWeight: '800' }}>{monthLabel(month)}</Text>
           </Pressable>
         );
       })}
@@ -40,9 +43,16 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 10,
+    shadowColor: '#000000',
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 2,
   },
 });

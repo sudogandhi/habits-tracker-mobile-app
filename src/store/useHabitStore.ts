@@ -1,16 +1,24 @@
-﻿import { create } from 'zustand';
-import type { Habit, HabitEntry, Settings } from '@/types/models';
-import { dateKey, getDaysInMonth } from '@/utils/date';
+﻿import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import type { Habit, HabitEntry, Settings, UserProfile } from '@/types/models';
+import { dateKey } from '@/utils/date';
 
 type HabitState = {
+  hasHydrated: boolean;
   settings: Settings;
+  profile: UserProfile;
   habits: Habit[];
   entries: HabitEntry[];
   selectedMonth: number;
   setThemeMode: (mode: Settings['themeMode']) => void;
+  setProfileName: (name: string) => void;
   setSelectedMonth: (month: number) => void;
   toggleEntry: (habitId: string, month: number, day: number) => void;
   upsertHabit: (habit: Habit) => void;
+  setHabits: (habits: Habit[]) => void;
+  completeOnboarding: () => void;
+  setHasHydrated: (hasHydrated: boolean) => void;
 };
 
 const year = new Date().getFullYear();
@@ -22,59 +30,74 @@ const defaultSettings: Settings = {
   themeMode: 'dark',
 };
 
-const defaultHabits: Habit[] = [
-  { id: 'h1', name: 'Exercise', type: 'Good', category: 'Health', active: true },
-  { id: 'h2', name: 'Deep Work (2h)', type: 'Good', category: 'Work', active: true },
-  { id: 'h3', name: 'Junk Food', type: 'Bad', category: 'Health', active: true },
-  { id: 'h4', name: 'Social Media > 1h', type: 'Bad', category: 'Distraction', active: true },
-];
-
-const seedEntries = (): HabitEntry[] => {
-  const out: HabitEntry[] = [];
-  const month = new Date().getMonth() + 1;
-  const days = getDaysInMonth(year, month);
-
-  for (let d = 1; d <= Math.min(16, days); d += 1) {
-    out.push({ habitId: 'h1', dateKey: dateKey(year, month, d), value: d % 2 === 0 ? 1 : 0 });
-    out.push({ habitId: 'h2', dateKey: dateKey(year, month, d), value: d % 3 === 0 ? 1 : 0 });
-    out.push({ habitId: 'h3', dateKey: dateKey(year, month, d), value: d % 4 === 0 ? 1 : 0 });
-    out.push({ habitId: 'h4', dateKey: dateKey(year, month, d), value: d % 5 === 0 ? 1 : 0 });
-  }
-
-  return out;
+const defaultProfile: UserProfile = {
+  name: '',
+  hasCompletedOnboarding: false,
 };
 
-export const useHabitStore = create<HabitState>((set, get) => ({
-  settings: defaultSettings,
-  habits: defaultHabits,
-  entries: seedEntries(),
-  selectedMonth: new Date().getMonth() + 1,
-  setThemeMode: (mode) => set((state) => ({ settings: { ...state.settings, themeMode: mode } })),
-  setSelectedMonth: (month) => set({ selectedMonth: month }),
-  toggleEntry: (habitId, month, day) => {
-    const { settings, entries } = get();
-    const dk = dateKey(settings.year, month, day);
-    const idx = entries.findIndex((e) => e.habitId === habitId && e.dateKey === dk);
+const defaultHabits: Habit[] = [];
 
-    if (idx === -1) {
-      set({ entries: [...entries, { habitId, dateKey: dk, value: 1 }] });
-      return;
-    }
+export const useHabitStore = create<HabitState>()(
+  persist(
+    (set, get) => ({
+      hasHydrated: false,
+      settings: defaultSettings,
+      profile: defaultProfile,
+      habits: defaultHabits,
+      entries: [],
+      selectedMonth: new Date().getMonth() + 1,
+      setThemeMode: (mode) => set((state) => ({ settings: { ...state.settings, themeMode: mode } })),
+      setProfileName: (name) => set((state) => ({ profile: { ...state.profile, name: name.trim() } })),
+      setSelectedMonth: (month) => set({ selectedMonth: month }),
+      toggleEntry: (habitId, month, day) => {
+        const { settings, entries } = get();
+        const dk = dateKey(settings.year, month, day);
+        const idx = entries.findIndex((e) => e.habitId === habitId && e.dateKey === dk);
 
-    const current = entries[idx];
-    const next = [...entries];
-    next[idx] = { ...current, value: current.value === 1 ? 0 : 1 };
-    set({ entries: next });
-  },
-  upsertHabit: (habit) => {
-    const { habits } = get();
-    const idx = habits.findIndex((h) => h.id === habit.id);
-    if (idx === -1) {
-      set({ habits: [...habits, habit] });
-      return;
-    }
-    const next = [...habits];
-    next[idx] = habit;
-    set({ habits: next });
-  },
-}));
+        if (idx === -1) {
+          set({ entries: [...entries, { habitId, dateKey: dk, value: 1 }] });
+          return;
+        }
+
+        const current = entries[idx];
+        const next = [...entries];
+        next[idx] = { ...current, value: current.value === 1 ? 0 : 1 };
+        set({ entries: next });
+      },
+      upsertHabit: (habit) => {
+        const { habits } = get();
+        const idx = habits.findIndex((h) => h.id === habit.id);
+        if (idx === -1) {
+          set({ habits: [...habits, habit] });
+          return;
+        }
+        const next = [...habits];
+        next[idx] = habit;
+        set({ habits: next });
+      },
+      setHabits: (habits) => set({ habits }),
+      completeOnboarding: () =>
+        set((state) => ({
+          profile: {
+            ...state.profile,
+            hasCompletedOnboarding: true,
+          },
+        })),
+      setHasHydrated: (hasHydrated) => set({ hasHydrated }),
+    }),
+    {
+      name: 'habit-tracker-store',
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        settings: state.settings,
+        profile: state.profile,
+        habits: state.habits,
+        entries: state.entries,
+        selectedMonth: state.selectedMonth,
+      }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
+    },
+  ),
+);

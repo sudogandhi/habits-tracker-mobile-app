@@ -5,11 +5,16 @@ import { useAppTheme } from '@/theme/useAppTheme';
 
 export const SettingsScreen = () => {
   const theme = useAppTheme();
-  const { settings, setThemeMode } = useHabitStore();
+  const { settings, profile, setThemeMode } = useHabitStore();
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: theme.colors.background }} contentContainerStyle={styles.container}>
       <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Settings</Text>
+
+      <SurfaceCard>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>Profile</Text>
+        <Text style={[styles.item, { color: theme.colors.textSecondary }]}>Name: {profile.name || 'Not set'}</Text>
+      </SurfaceCard>
 
       <SurfaceCard>
         <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>Theme</Text>

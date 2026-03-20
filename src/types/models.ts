@@ -24,6 +24,11 @@ export type Settings = {
   themeMode: ThemeMode;
 };
 
+export type UserProfile = {
+  name: string;
+  hasCompletedOnboarding: boolean;
+};
+
 export type DaySummary = {
   day: number;
   goodDone: number;
