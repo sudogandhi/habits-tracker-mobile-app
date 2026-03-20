@@ -25,7 +25,8 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0B1020"
-      }
+      },
+      "package": "com.anonymous.habitstrackermobile"
     },
     "extra": {
       "eas": {
