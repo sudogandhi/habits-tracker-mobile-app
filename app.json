@@ -17,11 +17,19 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.habits-tracker-mobile"
+      "bundleIdentifier": "com.anonymous.habits-tracker-mobile",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0B1020"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "19aa3f4d-8365-4e37-9277-1e07151d5d10"
       }
     }
   }
