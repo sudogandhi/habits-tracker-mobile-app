@@ -9,6 +9,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#0B1020"
     },
+    "plugins": [
+      "expo-notifications"
+    ],
     "assetBundlePatterns": [
       "**/*"
     ],
