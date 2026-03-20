@@ -139,9 +139,12 @@ export const TrackScreen = () => {
       <View style={[styles.heroCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
         <Text style={[styles.eyebrow, { color: theme.colors.accent }]}>TODAY'S TRACKER</Text>
         <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Track habits for today</Text>
-        <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-          {dayShort(todayYear, todayMonth, todayDay)}, {monthLabel(todayMonth)} {todayDay}
-        </Text>
+        <View style={[styles.todayBadge, { backgroundColor: theme.colors.accentSoft, borderColor: theme.colors.border }]}>
+          <Ionicons name="today" size={16} color={theme.colors.accent} />
+          <Text style={[styles.todayBadgeText, { color: theme.colors.accent }]}>
+            {dayShort(todayYear, todayMonth, todayDay)}, {monthLabel(todayMonth)} {todayDay}
+          </Text>
+        </View>
 
         <View style={styles.heroStatsRow}>
           <View ref={goodStatRef} style={styles.heroStatWrap}>
@@ -340,9 +343,19 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     fontWeight: '900',
   },
-  subtitle: {
-    fontSize: 15,
-    fontWeight: '600',
+  todayBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  todayBadgeText: {
+    fontSize: 14,
+    fontWeight: '800',
   },
   heroStatsRow: {
     flexDirection: 'row',

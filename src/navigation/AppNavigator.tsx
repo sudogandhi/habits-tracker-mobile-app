@@ -1,7 +1,8 @@
-﻿import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+﻿import { BottomTabBarButtonProps, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { DashboardScreen } from '@/screens/DashboardScreen';
 import { MonthScreen } from '@/screens/MonthScreen';
 import { TrackScreen } from '@/screens/TrackScreen';
@@ -22,6 +23,119 @@ const tabIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   Track: 'add',
   Habits: 'checkmark-circle',
   Settings: 'settings',
+};
+
+const sparkleVectors = [
+  { x: -18, y: -16, scale: 1 },
+  { x: 20, y: -18, scale: 0.85 },
+  { x: -10, y: -28, scale: 0.72 },
+  { x: 12, y: -34, scale: 0.95 },
+];
+
+type SparkleTabButtonProps = BottomTabBarButtonProps & {
+  children: React.ReactNode;
+  theme: ReturnType<typeof useAppTheme>;
+  isTrack?: boolean;
+};
+
+const SparkleTabButton = ({
+  children,
+  onPress,
+  style,
+  accessibilityState,
+  accessibilityLabel,
+  testID,
+  theme,
+  isTrack = false,
+}: SparkleTabButtonProps) => {
+  const progress = useRef(sparkleVectors.map(() => new Animated.Value(0))).current;
+  const opacity = useRef(sparkleVectors.map(() => new Animated.Value(0))).current;
+
+  const triggerSparkles = () => {
+    progress.forEach((value) => value.setValue(0));
+    opacity.forEach((value) => value.setValue(0));
+
+    Animated.parallel(
+      sparkleVectors.flatMap((_, index) => [
+        Animated.timing(progress[index], {
+          toValue: 1,
+          duration: 520,
+          useNativeDriver: true,
+        }),
+        Animated.sequence([
+          Animated.timing(opacity[index], {
+            toValue: 1,
+            duration: 90,
+            delay: index * 18,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity[index], {
+            toValue: 0,
+            duration: 360,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    ).start();
+  };
+
+  return (
+    <Pressable
+      onPress={(event) => {
+        triggerSparkles();
+        onPress?.(event);
+      }}
+      style={[style, isTrack ? styles.centerTabWrap : styles.defaultTabWrap]}
+      accessibilityRole="button"
+      accessibilityState={accessibilityState}
+      accessibilityLabel={accessibilityLabel ?? 'Navigation tab'}
+      testID={testID}
+    >
+      {children}
+      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+        {sparkleVectors.map((sparkle, index) => (
+          <Animated.View
+            key={`${isTrack ? 'track' : 'tab'}-${index}`}
+            style={[
+              styles.sparkle,
+              isTrack ? styles.trackSparkleOrigin : styles.defaultSparkleOrigin,
+              {
+                opacity: opacity[index],
+                transform: [
+                  {
+                    translateX: progress[index].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, sparkle.x],
+                    }),
+                  },
+                  {
+                    translateY: progress[index].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, sparkle.y],
+                    }),
+                  },
+                  {
+                    scale: progress[index].interpolate({
+                      inputRange: [0, 0.35, 1],
+                      outputRange: [0.2, sparkle.scale, 0.45],
+                    }),
+                  },
+                  {
+                    rotate: progress[index].interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0deg', index % 2 === 0 ? '18deg' : '-18deg'],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <Ionicons name="sparkles" size={12} color={theme.colors.accent} />
+          </Animated.View>
+        ))}
+      </View>
+    </Pressable>
+  );
 };
 
 const MainTabs = () => {
@@ -58,33 +172,18 @@ const MainTabs = () => {
           ),
         tabBarButton: (props) => {
           if (route.name !== 'Track') {
-            const { children, style, onPress, accessibilityState, accessibilityLabel, testID } = props;
-
             return (
-              <Pressable
-                onPress={onPress}
-                style={style}
-                accessibilityRole="button"
-                accessibilityState={accessibilityState}
-                accessibilityLabel={accessibilityLabel}
-                testID={testID}
-              >
-                {children}
-              </Pressable>
+              <SparkleTabButton {...props} theme={theme}>
+                {props.children}
+              </SparkleTabButton>
             );
           }
 
-          const { onPress, accessibilityState } = props;
+          const { accessibilityState } = props;
           const selected = accessibilityState?.selected;
 
           return (
-            <Pressable
-              onPress={onPress}
-              style={styles.centerTabWrap}
-              accessibilityRole="button"
-              accessibilityState={accessibilityState}
-              accessibilityLabel="Track habits"
-            >
+            <SparkleTabButton {...props} theme={theme} isTrack>
               <View
                 style={[
                   styles.centerTabButton,
@@ -98,7 +197,7 @@ const MainTabs = () => {
                 <Ionicons name="flash" size={24} color="#FFFFFF" />
               </View>
               <Text style={[styles.centerTabLabel, { color: theme.colors.textPrimary }]}>Track</Text>
-            </Pressable>
+            </SparkleTabButton>
           );
         },
       })}
@@ -138,10 +237,14 @@ export const AppNavigator = () => {
 };
 
 const styles = StyleSheet.create({
+  defaultTabWrap: {
+    overflow: 'visible',
+  },
   centerTabWrap: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
+    paddingTop: 0,
+    overflow: 'visible',
   },
   centerTabButton: {
     width: 60,
@@ -161,5 +264,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 11,
     fontWeight: '800',
+  },
+  sparkle: {
+    position: 'absolute',
+  },
+  defaultSparkleOrigin: {
+    top: 10,
+    left: '50%',
+    marginLeft: -6,
+  },
+  trackSparkleOrigin: {
+    top: -2,
+    left: '50%',
+    marginLeft: -6,
   },
 });
