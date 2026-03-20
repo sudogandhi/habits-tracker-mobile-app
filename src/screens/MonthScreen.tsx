@@ -1,20 +1,21 @@
-﻿import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+﻿import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MonthChips } from '@/components/MonthChips';
 import { SurfaceCard } from '@/components/SurfaceCard';
 import { useHabitStore } from '@/store/useHabitStore';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { monthSummary } from '@/utils/calculations';
-import { dayShort, getDaysInMonth, monthLabel } from '@/utils/date';
+import { monthLabel } from '@/utils/date';
 
 export const MonthScreen = () => {
   const theme = useAppTheme();
-  const { settings, habits, entries, selectedMonth, setSelectedMonth, toggleEntry } = useHabitStore();
+  const { settings, habits, entries, selectedMonth, setSelectedMonth } = useHabitStore();
   const summary = monthSummary(settings, habits, entries, selectedMonth);
-  const days = getDaysInMonth(settings.year, selectedMonth);
-  const activeHabits = habits.filter((h) => h.active);
   const winningDays = summary.daily.filter((day) => day.net > 0).length;
   const perfectDays = summary.daily.filter((day) => day.badHappened === 0 && day.goodCompletion === 1).length;
+  const maxAbsNet = Math.max(1, ...summary.daily.map((day) => Math.abs(day.net)));
+  const goodShare = summary.goodDone + summary.badHappened === 0 ? 0 : summary.goodDone / (summary.goodDone + summary.badHappened);
+  const completionPeak = Math.max(0.01, ...summary.daily.map((day) => day.goodCompletion ?? 0));
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: theme.colors.background }} contentContainerStyle={styles.container}>
@@ -36,67 +37,80 @@ export const MonthScreen = () => {
       </View>
 
       <SurfaceCard>
-        <View style={styles.gridHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>Quest Grid</Text>
-          <Text style={[styles.gridHint, { color: theme.colors.textSecondary }]}>Tap cells to score the day</Text>
+        <View style={styles.cardHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>Daily Net Momentum</Text>
+          <Text style={[styles.cardHint, { color: theme.colors.textSecondary }]}>How each day scored</Text>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View>
-            <View style={styles.headerRow}>
-              <View style={[styles.habitCell, { backgroundColor: theme.colors.card }]}>
-                <Text style={[styles.headerText, { color: theme.colors.textPrimary }]}>Quest</Text>
-              </View>
-              {Array.from({ length: days }, (_, i) => i + 1).map((d) => (
-                <View key={`h-${d}`} style={[styles.dayCell, { backgroundColor: theme.colors.card }]}>
-                  <Text style={[styles.headerText, { color: theme.colors.textPrimary }]}>{d}</Text>
-                  <Text style={[styles.small, { color: theme.colors.textSecondary }]}>{dayShort(settings.year, selectedMonth, d)}</Text>
-                </View>
-              ))}
-            </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chartScroll}>
+          <View style={styles.netChartRow}>
+            {summary.daily.map((day) => {
+              const barHeight = Math.max(12, Math.round((Math.abs(day.net) / maxAbsNet) * 100));
+              const positive = day.net >= 0;
 
-            {activeHabits.map((habit) => (
-              <View key={habit.id} style={styles.gridRow}>
-                <View style={[styles.habitCell, { borderColor: theme.colors.border }]}>
-                  <Text style={[styles.habitName, { color: theme.colors.textPrimary }]}>{habit.name}</Text>
-                  <Text
-                    style={[
-                      styles.small,
-                      {
-                        color: habit.type === 'Good' ? theme.colors.success : theme.colors.danger,
-                      },
-                    ]}
-                  >
-                    {habit.type === 'Good' ? `+${settings.goodPoints} boost` : `${settings.badPenalty} trap`}
-                  </Text>
-                </View>
-                {Array.from({ length: days }, (_, i) => i + 1).map((day) => {
-                  const value = entries.find((e) => e.habitId === habit.id && e.dateKey === `${settings.year}-${String(selectedMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`)?.value ?? 0;
-                  const activeColor = habit.type === 'Good' ? theme.colors.success : theme.colors.danger;
-                  const idleBg = habit.type === 'Good' ? theme.colors.surface : theme.colors.cardSecondary;
-                  return (
-                    <Pressable
-                      key={`${habit.id}-${day}`}
-                      onPress={() => toggleEntry(habit.id, selectedMonth, day)}
+              return (
+                <View key={day.day} style={styles.netBarWrap}>
+                  <View style={styles.netBarTrack}>
+                    <View
                       style={[
-                        styles.dayCell,
+                        styles.netBar,
                         {
-                          borderColor: theme.colors.border,
-                          backgroundColor: value ? activeColor : idleBg,
+                          height: barHeight,
+                          backgroundColor: positive ? theme.colors.chartPositive : theme.colors.chartNegative,
+                          alignSelf: positive ? 'flex-end' : 'flex-start',
                         },
                       ]}
-                    >
-                      <Ionicons
-                        name={value ? (habit.type === 'Good' ? 'checkmark' : 'close') : 'add'}
-                        size={16}
-                        color={value ? '#FFFFFF' : theme.colors.textSecondary}
-                      />
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ))}
+                    />
+                  </View>
+                  <Text style={[styles.netBarLabel, { color: theme.colors.textSecondary }]}>{day.day}</Text>
+                </View>
+              );
+            })}
           </View>
         </ScrollView>
+      </SurfaceCard>
+
+      <SurfaceCard>
+        <View style={styles.cardHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>Completion Trend</Text>
+          <Text style={[styles.cardHint, { color: theme.colors.textSecondary }]}>Good-habit follow-through</Text>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chartScroll}>
+          <View style={styles.completionRow}>
+            {summary.daily.map((day) => {
+              const completion = day.goodCompletion ?? 0;
+              const height = Math.max(8, Math.round((completion / completionPeak) * 92));
+
+              return (
+                <View key={day.day} style={styles.completionBarWrap}>
+                  <View style={[styles.completionBarTrack, { backgroundColor: theme.colors.card }]}>
+                    <View style={[styles.completionBar, { height, backgroundColor: theme.colors.accent }]} />
+                  </View>
+                  <Text style={[styles.netBarLabel, { color: theme.colors.textSecondary }]}>{day.day}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </SurfaceCard>
+
+      <SurfaceCard>
+        <View style={styles.cardHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.textPrimary }]}>Good vs Bad Mix</Text>
+          <Text style={[styles.cardHint, { color: theme.colors.textSecondary }]}>Monthly action split</Text>
+        </View>
+        <View style={[styles.mixTrack, { backgroundColor: theme.colors.cardSecondary }]}>
+          <View style={[styles.mixGood, { width: `${goodShare * 100}%`, backgroundColor: theme.colors.success }]} />
+        </View>
+        <View style={styles.mixLegendRow}>
+          <View style={styles.mixLegendItem}>
+            <View style={[styles.mixDot, { backgroundColor: theme.colors.success }]} />
+            <Text style={[styles.mixLegendText, { color: theme.colors.textSecondary }]}>Good {summary.goodDone}</Text>
+          </View>
+          <View style={styles.mixLegendItem}>
+            <View style={[styles.mixDot, { backgroundColor: theme.colors.danger }]} />
+            <Text style={[styles.mixLegendText, { color: theme.colors.textSecondary }]}>Bad {summary.badHappened}</Text>
+          </View>
+        </View>
       </SurfaceCard>
 
       <SurfaceCard>
@@ -151,47 +165,90 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 8,
   },
-  gridHeader: {
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    gap: 10,
+  },
+  cardHint: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  chartScroll: {
+    paddingVertical: 4,
+  },
+  netChartRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  netBarWrap: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  netBarTrack: {
+    width: 16,
+    height: 110,
+    justifyContent: 'center',
+  },
+  netBar: {
+    width: '100%',
+    borderRadius: 999,
+  },
+  netBarLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  completionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  completionBarWrap: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  completionBarTrack: {
+    width: 14,
+    height: 100,
+    borderRadius: 999,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  completionBar: {
+    width: '100%',
+    borderRadius: 999,
+  },
+  mixTrack: {
+    height: 16,
+    borderRadius: 999,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  mixGood: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  mixLegendRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
+    gap: 12,
   },
-  gridHint: {
+  mixLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  mixDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  mixLegendText: {
     fontSize: 12,
     fontWeight: '700',
-  },
-  headerRow: {
-    flexDirection: 'row',
-  },
-  gridRow: {
-    flexDirection: 'row',
-  },
-  habitCell: {
-    width: 164,
-    minHeight: 54,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    justifyContent: 'center',
-  },
-  dayCell: {
-    width: 48,
-    minHeight: 54,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerText: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  habitName: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  small: {
-    fontSize: 10,
-    fontWeight: '600',
   },
   rollupText: {
     fontSize: 14,
