@@ -5,10 +5,6 @@ node_modules/
 .expo/
 .expo-shared/
 
-# Native build output
-android/
-ios/
-
 # Build / bundles
 dist/
 web-build/
