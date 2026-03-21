@@ -3,6 +3,7 @@ import { Animated, Easing, ScrollView, StyleSheet, Text, Pressable, View } from 
 import { Ionicons } from '@expo/vector-icons';
 import { useHabitStore } from '@/store/useHabitStore';
 import { useAppTheme } from '@/theme/useAppTheme';
+import type { HabitType } from '@/types/models';
 import { dayShort, monthLabel } from '@/utils/date';
 
 export const TrackScreen = () => {
@@ -22,11 +23,13 @@ export const TrackScreen = () => {
   const scorePulse = useRef(new Animated.Value(1)).current;
   const [flightLabel, setFlightLabel] = useState('');
   const [flightColor, setFlightColor] = useState('#FFFFFF');
+  const [visibleFilter, setVisibleFilter] = useState<'All' | HabitType>('All');
   const today = new Date();
   const todayMonth = today.getMonth() + 1;
   const todayDay = today.getDate();
   const todayYear = settings.year;
   const activeHabits = habits.filter((habit) => habit.active);
+  const visibleHabits = visibleFilter === 'All' ? activeHabits : activeHabits.filter((habit) => habit.type === visibleFilter);
   const todayDateKey = `${todayYear}-${String(todayMonth).padStart(2, '0')}-${String(todayDay).padStart(2, '0')}`;
 
   const goodTrackedToday = activeHabits.filter((habit) => {
@@ -148,33 +151,90 @@ export const TrackScreen = () => {
 
         <View style={styles.heroStatsRow}>
           <View ref={goodStatRef} style={styles.heroStatWrap}>
-            <Animated.View style={[styles.heroStatCard, { backgroundColor: theme.colors.card, transform: [{ scale: goodPulse }] }]}>
-              <View style={styles.heroStatLeft}>
-                <Ionicons name="arrow-up-circle" size={24} color={theme.colors.success} />
-                <Text style={[styles.heroStatLabel, { color: theme.colors.textSecondary }]}>Good</Text>
-              </View>
-              <Text style={[styles.heroStatValue, { color: theme.colors.textPrimary }]}>{goodTrackedToday}</Text>
-            </Animated.View>
+            <Pressable onPress={() => setVisibleFilter((current) => (current === 'Good' ? 'All' : 'Good'))}>
+              <Animated.View
+                style={[
+                  styles.heroStatCard,
+                  {
+                    backgroundColor: visibleFilter === 'Good' ? theme.colors.success : theme.colors.card,
+                    borderColor: visibleFilter === 'Good' ? theme.colors.success : 'transparent',
+                    borderWidth: 1,
+                    transform: [{ scale: goodPulse }],
+                  },
+                ]}
+              >
+                <View style={styles.heroStatLeft}>
+                  <Ionicons
+                    name="arrow-up-circle"
+                    size={24}
+                    color={visibleFilter === 'Good' ? '#FFFFFF' : theme.colors.success}
+                  />
+                  <Text style={[styles.heroStatLabel, { color: visibleFilter === 'Good' ? '#FFFFFF' : theme.colors.textSecondary }]}>Good</Text>
+                </View>
+                <Text style={[styles.heroStatValue, { color: visibleFilter === 'Good' ? '#FFFFFF' : theme.colors.textPrimary }]}>
+                  {goodTrackedToday}
+                </Text>
+              </Animated.View>
+            </Pressable>
           </View>
           <View ref={badStatRef} style={styles.heroStatWrap}>
-            <Animated.View style={[styles.heroStatCard, { backgroundColor: theme.colors.cardSecondary, transform: [{ scale: badPulse }] }]}>
-              <View style={styles.heroStatLeft}>
-                <Ionicons name="arrow-down-circle" size={24} color={theme.colors.danger} />
-                <Text style={[styles.heroStatLabel, { color: theme.colors.textSecondary }]}>Bad</Text>
-              </View>
-              <Text style={[styles.heroStatValue, { color: theme.colors.textPrimary }]}>{badTrackedToday}</Text>
-            </Animated.View>
+            <Pressable onPress={() => setVisibleFilter((current) => (current === 'Bad' ? 'All' : 'Bad'))}>
+              <Animated.View
+                style={[
+                  styles.heroStatCard,
+                  {
+                    backgroundColor: visibleFilter === 'Bad' ? theme.colors.danger : theme.colors.cardSecondary,
+                    borderColor: visibleFilter === 'Bad' ? theme.colors.danger : 'transparent',
+                    borderWidth: 1,
+                    transform: [{ scale: badPulse }],
+                  },
+                ]}
+              >
+                <View style={styles.heroStatLeft}>
+                  <Ionicons
+                    name="arrow-down-circle"
+                    size={24}
+                    color={visibleFilter === 'Bad' ? '#FFFFFF' : theme.colors.danger}
+                  />
+                  <Text style={[styles.heroStatLabel, { color: visibleFilter === 'Bad' ? '#FFFFFF' : theme.colors.textSecondary }]}>Bad</Text>
+                </View>
+                <Text style={[styles.heroStatValue, { color: visibleFilter === 'Bad' ? '#FFFFFF' : theme.colors.textPrimary }]}>
+                  {badTrackedToday}
+                </Text>
+              </Animated.View>
+            </Pressable>
           </View>
           <View ref={scoreStatRef} style={styles.heroStatWrap}>
-            <Animated.View style={[styles.heroStatCard, { backgroundColor: theme.colors.card, transform: [{ scale: scorePulse }] }]}>
-              <View style={styles.heroStatLeft}>
-                <Ionicons name="flash" size={24} color={todayScore >= 0 ? theme.colors.warning : theme.colors.danger} />
-                <Text style={[styles.heroStatLabel, { color: theme.colors.textSecondary }]}>Score</Text>
-              </View>
-              <Text style={[styles.heroStatValue, { color: todayScore >= 0 ? theme.colors.success : theme.colors.danger }]}>
-                {todayScore > 0 ? `+${todayScore}` : todayScore}
-              </Text>
-            </Animated.View>
+            <Pressable onPress={() => setVisibleFilter('All')}>
+              <Animated.View
+                style={[
+                  styles.heroStatCard,
+                  {
+                    backgroundColor: visibleFilter === 'All' ? theme.colors.accent : theme.colors.card,
+                    borderColor: visibleFilter === 'All' ? theme.colors.accent : 'transparent',
+                    borderWidth: 1,
+                    transform: [{ scale: scorePulse }],
+                  },
+                ]}
+              >
+                <View style={styles.heroStatLeft}>
+                  <Ionicons
+                    name="flash"
+                    size={24}
+                    color={visibleFilter === 'All' ? '#FFFFFF' : todayScore >= 0 ? theme.colors.warning : theme.colors.danger}
+                  />
+                  <Text style={[styles.heroStatLabel, { color: visibleFilter === 'All' ? '#FFFFFF' : theme.colors.textSecondary }]}>Score</Text>
+                </View>
+                <Text
+                  style={[
+                    styles.heroStatValue,
+                    { color: visibleFilter === 'All' ? '#FFFFFF' : todayScore >= 0 ? theme.colors.success : theme.colors.danger },
+                  ]}
+                >
+                  {todayScore > 0 ? `+${todayScore}` : todayScore}
+                </Text>
+              </Animated.View>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -188,8 +248,15 @@ export const TrackScreen = () => {
                 Add or enable habits in the Habits tab to start tracking today.
               </Text>
             </View>
+          ) : visibleHabits.length === 0 ? (
+            <View style={[styles.emptyCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+              <Text style={[styles.emptyTitle, { color: theme.colors.textPrimary }]}>No {visibleFilter.toLowerCase()} habits found</Text>
+              <Text style={[styles.emptyCopy, { color: theme.colors.textSecondary }]}>
+                Tap Score to show all habits again.
+              </Text>
+            </View>
           ) : (
-            activeHabits.map((habit) => {
+            visibleHabits.map((habit) => {
               const value = entries.find((entry) => entry.habitId === habit.id && entry.dateKey === todayDateKey)?.value ?? 0;
               const activeColor = habit.type === 'Good' ? theme.colors.success : theme.colors.danger;
               const typeCopy = habit.type === 'Good' ? 'Do today' : 'Avoid today';

@@ -4,8 +4,10 @@
     "slug": "habits-tracker-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icons/icon_light_theme.png",
     "userInterfaceStyle": "automatic",
     "splash": {
+      "image": "./assets/splash_screen/splash_screen.png",
       "resizeMode": "contain",
       "backgroundColor": "#0B1020"
     },
@@ -24,6 +26,7 @@
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/icons/icon_light_theme.png",
         "backgroundColor": "#0B1020"
       },
       "package": "com.anonymous.habitstrackermobile"
