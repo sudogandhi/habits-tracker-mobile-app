@@ -1,8 +1,8 @@
-﻿import 'react-native-gesture-handler';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo } from 'react';
 import { ActivityIndicator, AppState, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { useHabitStore } from './src/store/useHabitStore';
@@ -61,32 +61,36 @@ export default function App() {
 
   if (!hasHydrated) {
     return (
-      <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1, backgroundColor: appTheme.colors.background }} edges={['top', 'left', 'right']}>
-          <View
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: appTheme.colors.background,
-            }}
-          >
-            <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
-            <ActivityIndicator size="large" color={appTheme.colors.accent} />
-          </View>
-        </SafeAreaView>
-      </SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <SafeAreaView style={{ flex: 1, backgroundColor: appTheme.colors.background }} edges={['top', 'left', 'right']}>
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: appTheme.colors.background,
+              }}
+            >
+              <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+              <ActivityIndicator size="large" color={appTheme.colors.accent} />
+            </View>
+          </SafeAreaView>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
     );
   }
 
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: appTheme.colors.background }} edges={['top', 'left', 'right']}>
-        <NavigationContainer theme={navTheme}>
-          <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
-          <AppNavigator />
-        </NavigationContainer>
-      </SafeAreaView>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <SafeAreaView style={{ flex: 1, backgroundColor: appTheme.colors.background }} edges={['top', 'left', 'right']}>
+          <NavigationContainer theme={navTheme}>
+            <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+            <AppNavigator />
+          </NavigationContainer>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
